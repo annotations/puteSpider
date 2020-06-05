@@ -18,29 +18,63 @@ import os
 
 userId = "236742"
 app_key = "6027a6b45d762a772b97779f078f2065"
-cookie = "locale=zh-CN; Hm_lvt_abc9319e28ba129b86e23261fc67cb8d=1559706002; email=hhk0001%40gmail.com; phone=15651800896; user_session=BAhJIjpjbl8yMzY3NDJfOG9BNWxFUVMyR1pTZFlTLXZNMkV3WWZoMktnRmZKYmhTa1ZoOENXZzJqMAY6BkVU--e475fb77e0e0d657eac21e71548bc58c1e0f86a7; _saturn_session=ZHcvTDhZWVVqd3ppdE4xZGpKZjRVQ1p5QXVrOXNKQTZGYVZxTGNCWVVMdnFoL0UxRFoyQXlSeXZhSmRkVFZYMEYzNnNGekpQUElvYUZhMGRuc0w1S0ZJS2RxbllMMzd2azZNaGZZSklnSk54VU9JelNYRm1rdHJ5ZXBscnE5b0NYMTVKcWlKSXhtUDJ1Y08zejc3OEJBdHNMbWV4b2VobW5XUWRjTE1Pd3Vub2xxaDAvYkdwRGR1RGVIUGRlOXQwLS1WRVBZTzUrVkdmd09rSG1pRXcxMnF3PT0%3D--5197dfaf0339beda511a61a31e95bbbc9bb0dbcf; Hm_lpvt_abc9319e28ba129b86e23261fc67cb8d=1559706002"
-
+cookie = "locale=zh-CN; user_session=BAhJIjpjbl8yMzY3NDJfTURoT0ZQLUFkdGFlaTNTc1p3VkQwdGFnTkZRRVp3RU91RzJlbWg1TE1qVQY6BkVU--222591fbd9634241ad259d088e510e786dd889e6"
+eventFile = open("eventList.txt","a")
 
 def getPicList(id, formatTakenTime):
     # 图片保存目录
-    picDircPath = "D:/imags/" + formatTakenTime
+    picDircPath = "D:/imags2/" + formatTakenTime
     param = "/events/" + str(id) + "?timestamp="
-    url = signEventList(param)
-    # url = "http://shiguangxiaowu.cn/events/"
-    # postFix = "?timestamp=1559670109&sign=ccecace67eb08aba07a1e1e065907d1b"
+    # url = signEventList(param)
+    
+    eventFile.write(str(id))
+    eventFile.write(",")
+    eventFile.write(formatTakenTime)
+    eventFile.write("\n")
+
+def getPicFromEvent(event, formatTakenTime):
+    # 图片保存目录
+    picDircPath = "D:/imags2/" + formatTakenTime
+
+    # 获取layout_detail列表。对应图片详情列表
+    detailList = event['layout_detail']
+
+    if detailList:
+        if os.path.exists(picDircPath) == False:
+            os.makedirs(picDircPath)
+        for detail in detailList:
+            if (detail['type'] != 'picture'):
+                continue
+            picture = detail['picture']
+            id = detail['id']
+            response = requests.get(picture)
+            # 获取的文本实际上是图片的二进制文本
+            img = response.content
+            # 将他拷贝到本地文件 w 写  b 二进制  wb代表写入二进制文本
+            localPicPath = picDircPath + "/" + str(id) + '.jpg'
+            with open(localPicPath,'wb' ) as f:
+                print(localPicPath)
+                f.write(img)
+            time.sleep(5)
+    # param = "/events/" + str(id) + "?timestamp="
+    # # url = signEventList(param)
+    
+    # eventFile.write(str(id))
+    # eventFile.write(",")
+    # eventFile.write(formatTakenTime)
+    # eventFile.write("\n")
+
+def getPicFromUrl(url, id, picDircPath):
     # 消息头直接从请求中爬的，还不知道哪几个是关键消息头
-    headers = {#"Host": "shiguangxiaowu.cn",
+    headers = {
                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Firefox/67.0",
                "Accept": "application/json, text/javascript, */*; q=0.01",
-               #"Accept-Language": "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2",
-               #"Accept-Encoding": "gzip, deflate",
                "Referer": "http://shiguangxiaowu.cn/zh-CN/home/144185",
-               #"X-NewRelic-ID": "VwIPUF9SGwAGVlBRDwk=",
                "X-Requested-With": "XMLHttpRequest",
                "Cookie": cookie
                }
     response = requests.get(url, headers=headers)
-    #print(response.text)
+    # print(response.text)
     # 为空时打印并跳过
     if response.text.strip()=='':
         print("----")
@@ -66,9 +100,10 @@ def getPicList(id, formatTakenTime):
             with open(localPicPath,'wb' ) as f:
                 print(localPicPath)
                 f.write(img)
-                count += 1
+                count += 1    
+        time.sleep(5)
     else:
-        eventLog = " no photos under eventId : (%d) at %s" %(id, formatTakenTime)
+        eventLog = " no photos under eventId : (%d) at %s" %(id, picDircPath)
         print(eventLog)
 
 
@@ -89,49 +124,50 @@ def signEventList(param):
     sign = '&sign=' + m3.hexdigest()
     # print(sign)
     # http://shiguangxiaowu.cn/events.json?baby_id=144185&v=2&width=700&include_rt=true&timestamp=1559665693&sign=36e358459ec4d674647bde13a53b7b63
-    url = "http://shiguangxiaowu.cn" + param + sign
+    url = "http://www.shiguangxiaowu.cn" + param + sign
     return url
 
 
 def getEventList(next):
-    param = "/events.json?baby_id=144185&v=2&width=700&include_rt=true&timestamp="
-    url = signEventList(param)
+    param = "/events?baby_id=144185&style=best_12&include_rt=true"
     # 消息头直接从请求中爬的，目前确认的是，referer是必填的，否则查不到数据
     headers = {'cookie': cookie,
-               #'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Firefox/67.0', 
-               #"Accept": "application/json, text/javascript, */*; q=0.01",
-               #"X-NewRelic-ID": "VwIPUF9SGwAGVlBRDwk=",
                "Referer": "http://shiguangxiaowu.cn/zh-CN/home/144185"
                }
     if next != -1 and next != None:
-        url+="&before=" + str(next)
+        param+="&before=" + str(next)
     # print(url)
+    param+="&timestamp="
+    url = signEventList(param)
+    print(url)
     response = requests.get(url, headers=headers)
     print(response.text)
     
     # 为空时打印并跳过
     if response.text.strip()=='':
-        print("====")
+        print("==empty event list==")
         return
     responseObj = json.loads(response.text)
     # 获取event列表。每个event对应一天
     eventList = jsonpath.jsonpath(responseObj, '$.list[:]')
     newNext = responseObj['next']
-    print("new next: %d" %newNext)
+    if newNext:
+        print("new next: %d" %newNext)
+
     # 根据event获取当天的照片列表
     # TODO 获取列表中的"next",用于循环查询列表
     # getPicList(eventList[1]['id'],eventList[1]['months'], eventList[1]['days'], cookie)
     for event in eventList:
-        eventId = event['id']
-        months = event['months']
-        days = event['days']
+        # eventId = event['id']
+        # months = event['months']
+        # days = event['days']
         takenGmt = event['taken_at_gmt']
         
         formatTakenTime = time.strftime("%Y%m%d", time.gmtime(takenGmt))
         #eventLog = "eventId : (%d). %dyear %dmonth %dday" %(eventId, months/12, months%12, days)
         #print(str)
-        getPicList(eventId, formatTakenTime)
-        time.sleep(20)
+        getPicFromEvent(event, formatTakenTime)
+        # time.sleep(20)
     return newNext
 
 
@@ -142,9 +178,9 @@ def getEventList(next):
 
 
 #download_pute(begin_date,end_date)
-next = getEventList(-1)
-while next != -1:
-        # 测试的时候发现联系请求会返回空数据,这里增加了一个等待时间
+next = getEventList(19)
+while next:
+        # 测试的时候发现连续请求会返回空数据,这里增加了一个等待时间
         time.sleep(30)
         next = getEventList(next)
 
@@ -152,3 +188,7 @@ while next != -1:
 
 # print (time.strftime("%Y%m%d", time.gmtime(1556899200)))
 
+# getPicFromUrl("http://www.shiguangxiaowu.cn/events/724053440988243867?timestamp=1564458227&sign=da1ab0c7d8fb1a560e3045151790b7b5",
+# 719123883336197938, "D:/imags2/2")
+
+eventFile.close()
